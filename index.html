@@ -142,6 +142,7 @@
     text-decoration: none;
     box-shadow: 0 0 18px rgba(240,165,0,0.18);
   }
+  .header-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .terms-btn:hover { background: #2b2107; }
   .terms-btn .draft-tag {
     background: #f0a500; color: #111; border-radius: 8px;
@@ -161,6 +162,7 @@
     <div class="defline">AI-generated websites and web apps for businesses of every size — from instant builds to large projects personally reviewed by our founders.</div>
     <div class="header-cta">
       <a class="terms-btn" id="termsBtn" href="terms.html">📄 Terms of Service <span class="draft-tag">Draft</span></a>
+      <a class="terms-btn" id="govBtn" href="governance.html">⚖️ Open Governance</a>
     </div>
   </header>
 
@@ -217,15 +219,17 @@
 
   <div class="card hidden" id="govCard">
     <div class="section-title">⚖️ Open Governance page</div>
-    <div class="section-sub">Visible to you alone. The page is always reachable; this decides what visitors see on it.</div>
+    <div class="section-sub">Visible to you alone. The page is always reachable — this decides what visitors see on it.</div>
     <div class="userbar">
       <span>Current state</span>
       <span class="credits" id="govState">–</span>
       <a class="signout" href="/governance" target="_blank" style="text-decoration:none;">View page</a>
     </div>
-    <label>Progress message shown while held</label>
-    <textarea id="govStatus" rows="3" placeholder="How far along the work is..."></textarea>
-    <button class="small-btn" id="govSaveBtn" onclick="saveGovernance()">Save message</button>
+    <label>Where this work has reached</label>
+    <textarea id="govStatus" rows="3" placeholder="How far along the work is — visitors see this."></textarea>
+    <label>Message for would-be collaborators</label>
+    <textarea id="govNote" rows="3" placeholder="What you want collaborators to know. Leave empty to hide this section."></textarea>
+    <button class="small-btn" id="govSaveBtn" onclick="saveGovernance()">Save messages</button>
     <button class="small-btn" id="govToggleBtn" onclick="toggleGovernance()" style="background:#26262c;color:#eee;margin-left:8px;">Release page</button>
     <div class="form-ok hidden" id="govOk">✓ Saved.</div>
   </div>
@@ -493,14 +497,20 @@
     const val = (data && data.value) || {};
     govReleased = val.released === true;
     document.getElementById('govStatus').value = val.status || '';
+    document.getElementById('govNote').value = val.note || '';
     document.getElementById('govState').textContent = govReleased ? 'RELEASED' : 'HELD';
     document.getElementById('govToggleBtn').textContent = govReleased ? 'Hold page' : 'Release page';
     document.getElementById('govCard').classList.remove('hidden');
   }
 
-  async function writeGovernance(released, status) {
+  async function writeGovernance(released) {
+    const payload = {
+      released: released,
+      status: document.getElementById('govStatus').value.trim(),
+      note: document.getElementById('govNote').value.trim()
+    };
     const { error } = await sb.from('site_settings')
-      .update({ value: { released: released, status: status }, updated_at: new Date().toISOString() })
+      .update({ value: payload, updated_at: new Date().toISOString() })
       .eq('key', 'governance');
     if (error) { alert('Could not save — ' + error.message); return false; }
     const ok = document.getElementById('govOk');
@@ -512,17 +522,17 @@
   async function saveGovernance() {
     const btn = document.getElementById('govSaveBtn');
     btn.disabled = true;
-    await writeGovernance(govReleased, document.getElementById('govStatus').value.trim());
+    await writeGovernance(govReleased);
     btn.disabled = false;
     loadGovernance();
   }
 
   async function toggleGovernance() {
     const next = !govReleased;
-    if (!confirm(next ? 'Release the Open Governance page to the public?' : 'Hold the page again (visitors see your message)?')) return;
+    if (!confirm(next ? 'Release the Open Governance page to the public?' : 'Hold the page again — visitors will see your progress message instead.')) return;
     const btn = document.getElementById('govToggleBtn');
     btn.disabled = true;
-    await writeGovernance(next, document.getElementById('govStatus').value.trim());
+    await writeGovernance(next);
     btn.disabled = false;
     loadGovernance();
   }
