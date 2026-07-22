@@ -517,8 +517,19 @@
   }
 
   // ---------------- voice ----------------
-  // Browser speech engine only. No API key, nothing billable, nothing to leak.
-  let recog = null, listening = false, speakOn = false, chosenVoice = null;
+  // Speech OUT: ElevenLabs via the voice-speak edge function when available,
+  // otherwise the browser engine. The API key never touches this page.
+  // Speech IN: paused automatically whenever we are speaking, so the Factory
+  // never dictates its own words into your app description.
+  const TTS_FN = SB_URL + '/functions/v1/voice-speak';
+
+  let recog = null;
+  let wantListening = false;   // what the user asked for
+  let speaking = false;        // true while audio is playing
+  let speakOn = false;
+  let chosenVoice = null;
+  let ttsAvailable = null;     // null = untested, true/false once known
+  let currentAudio = null;
 
   function pickVoice() {
     const vs = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
@@ -533,16 +544,73 @@
            vs.find(v => /^en/i.test(v.lang)) || vs[0];
   }
 
-  function say(text) {
-    if (!speakOn || !window.speechSynthesis) return;
+  // Pause the microphone for as long as we are talking.
+  function beginSpeaking() {
+    speaking = true;
+    if (recog && wantListening) { try { recog.stop(); } catch (_) {} }
+    const h = document.getElementById('heardLine');
+    if (h && wantListening) h.textContent = 'Microphone paused while speaking…';
+  }
+
+  function endSpeaking() {
+    speaking = false;
+    currentAudio = null;
+    if (recog && wantListening) {
+      setTimeout(function () {
+        if (wantListening && !speaking) {
+          try { recog.start(); } catch (_) {}
+          const h = document.getElementById('heardLine');
+          if (h) h.textContent = 'Listening…';
+        }
+      }, 350);
+    }
+  }
+
+  function browserSay(text) {
+    if (!window.speechSynthesis) { endSpeaking(); return; }
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       if (!chosenVoice) chosenVoice = pickVoice();
       if (chosenVoice) u.voice = chosenVoice;
       u.rate = 1.0; u.pitch = 1.0;
+      u.onend = endSpeaking;
+      u.onerror = endSpeaking;
       window.speechSynthesis.speak(u);
-    } catch (_) { /* speech is a nicety, never a blocker */ }
+    } catch (_) { endSpeaking(); }
+  }
+
+  async function say(text) {
+    if (!speakOn) return;
+    beginSpeaking();
+
+    if (ttsAvailable === false) { browserSay(text); return; }
+
+    try {
+      const headers = { 'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (session ? session.access_token : SB_ANON) };
+      const res = await fetch(TTS_FN, {
+        method: 'POST', headers: headers, body: JSON.stringify({ text: text })
+      });
+      if (!res.ok) throw new Error('tts ' + res.status);
+      const blob = await res.blob();
+      if (!blob || blob.size < 200) throw new Error('empty audio');
+      ttsAvailable = true;
+      const audio = new Audio(URL.createObjectURL(blob));
+      currentAudio = audio;
+      audio.onended = endSpeaking;
+      audio.onerror = function () { browserSay(text); };
+      await audio.play();
+    } catch (_) {
+      ttsAvailable = false;       // stop trying for the rest of the session
+      browserSay(text);
+    }
+  }
+
+  function stopSpeaking() {
+    if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch (_) {} }
+    if (currentAudio) { try { currentAudio.pause(); } catch (_) {} }
+    speaking = false;
   }
 
   function toggleSpeak() {
@@ -551,7 +619,7 @@
     b.textContent = speakOn ? '🔊 Voice replies: on' : '🔊 Voice replies: off';
     b.classList.toggle('on', speakOn);
     if (speakOn) { chosenVoice = pickVoice(); say('Voice on. Tell me what you would like to build.'); }
-    else if (window.speechSynthesis) window.speechSynthesis.cancel();
+    else { stopSpeaking(); endSpeaking(); }
   }
 
   function setupVoice() {
@@ -567,6 +635,7 @@
     recog.interimResults = true;
 
     recog.onresult = function (e) {
+      if (speaking) return;               // never transcribe our own voice
       const box = document.getElementById('appDesc');
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -581,6 +650,7 @@
     };
 
     recog.onerror = function (e) {
+      if (e.error === 'aborted' || e.error === 'no-speech') return;
       document.getElementById('heardLine').textContent =
         e.error === 'not-allowed'
           ? 'Microphone blocked — allow it in your browser settings.'
@@ -588,7 +658,10 @@
       stopMic();
     };
 
-    recog.onend = function () { if (listening) { try { recog.start(); } catch (_) {} } };
+    // restart only if the user still wants it AND we are not talking
+    recog.onend = function () {
+      if (wantListening && !speaking) { try { recog.start(); } catch (_) {} }
+    };
 
     if (window.speechSynthesis) {
       window.speechSynthesis.onvoiceschanged = function () { chosenVoice = pickVoice(); };
@@ -596,16 +669,19 @@
   }
 
   function stopMic() {
-    listening = false;
+    wantListening = false;
     const b = document.getElementById('micBtn');
     if (b) { b.classList.remove('listening'); b.textContent = '🎤 Speak your app'; }
     if (recog) { try { recog.stop(); } catch (_) {} }
+    const h = document.getElementById('heardLine');
+    if (h) h.textContent = '';
   }
 
   function toggleMic() {
     if (!recog) { setupVoice(); if (!recog) return; }
-    if (listening) { stopMic(); say('Got it.'); return; }
-    listening = true;
+    if (wantListening) { stopMic(); say('Got it.'); return; }
+    stopSpeaking();                       // never listen over our own voice
+    wantListening = true;
     const b = document.getElementById('micBtn');
     b.classList.add('listening');
     b.textContent = '⏹ Stop and keep it';
