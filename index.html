@@ -70,6 +70,24 @@
     color: #eee; padding: 13px 15px; font-size: 15px; font-family: inherit; outline: none;
   }
   input:focus, textarea:focus { border-color: #f0a500; }
+  .voice-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .mic-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; background: #16161a; border: 1.5px solid #f0a500;
+    color: #f0a500; border-radius: 999px; font-size: 13.5px; font-weight: 800;
+    cursor: pointer; font-family: inherit;
+  }
+  .mic-btn.listening { background: #f0a500; color: #111; animation: micpulse 1.2s infinite; }
+  .mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  @keyframes micpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(240,165,0,0.5);} 50% { box-shadow: 0 0 0 10px rgba(240,165,0,0);} }
+  .speak-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 18px; background: #0d0d0f; border: 1.5px solid #2c2c33;
+    color: #999; border-radius: 999px; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .speak-toggle.on { border-color: #f0a500; color: #f0a500; }
+  .heard { font-size: 12.5px; color: #666; margin-top: 8px; min-height: 16px; font-style: italic; }
   .hint { font-size: 12px; color: #666; margin-top: 6px; }
   .build-btn {
     width: 100%; margin-top: 22px; padding: 16px;
@@ -212,6 +230,11 @@
     <div class="hint">Lowercase letters and hyphens work best — we'll tidy it if needed.</div>
     <label>Describe Your App</label>
     <textarea id="appDesc" rows="4" placeholder="A booking page for my barbershop in London. Dark style, show services and prices, opening hours, and a booking form..."></textarea>
+    <div class="voice-row" id="voiceRow">
+      <button type="button" class="mic-btn" id="micBtn" onclick="toggleMic()">🎤 Speak your app</button>
+      <button type="button" class="speak-toggle" id="speakToggle" onclick="toggleSpeak()">🔊 Voice replies: off</button>
+    </div>
+    <div class="heard" id="heardLine"></div>
     <button class="build-btn" id="buildBtn" onclick="startBuild()">⚙ BUILD</button>
   </div>
 
@@ -430,6 +453,7 @@
 
     document.getElementById('buildBtn').disabled = true;
     document.getElementById('statusCard').classList.remove('hidden');
+    say('Starting your build now. This usually takes about ninety seconds.');
     document.getElementById('resultBox').classList.add('hidden');
     document.getElementById('errorBox').classList.add('hidden');
     setStep(1);
@@ -468,6 +492,7 @@
           const link = document.getElementById('siteLink');
           link.href = b.site_url; link.textContent = b.site_url;
           document.getElementById('resultBox').classList.remove('hidden');
+          say('Your app is live. The link is on screen.');
           document.getElementById('buildBtn').disabled = false;
           loadCredits();
         } else if (b.status === 'failed') {
@@ -483,12 +508,113 @@
     setStep(0, true);
     document.getElementById('errorText').textContent = msg;
     document.getElementById('errorBox').classList.remove('hidden');
+    say('That build did not finish. ' + (msg || ''));
     document.getElementById('buildBtn').disabled = false;
   }
 
   function resetToForm() {
     document.getElementById('statusCard').classList.add('hidden');
   }
+
+  // ---------------- voice ----------------
+  // Browser speech engine only. No API key, nothing billable, nothing to leak.
+  let recog = null, listening = false, speakOn = false, chosenVoice = null;
+
+  function pickVoice() {
+    const vs = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    if (!vs.length) return null;
+    const liked = ['Samantha', 'Serena', 'Karen', 'Daniel',
+                   'Google UK English Female', 'Google UK English Male'];
+    for (const name of liked) {
+      const hit = vs.find(v => v.name === name);
+      if (hit) return hit;
+    }
+    return vs.find(v => /^en[-_]GB/i.test(v.lang)) ||
+           vs.find(v => /^en/i.test(v.lang)) || vs[0];
+  }
+
+  function say(text) {
+    if (!speakOn || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (!chosenVoice) chosenVoice = pickVoice();
+      if (chosenVoice) u.voice = chosenVoice;
+      u.rate = 1.0; u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    } catch (_) { /* speech is a nicety, never a blocker */ }
+  }
+
+  function toggleSpeak() {
+    speakOn = !speakOn;
+    const b = document.getElementById('speakToggle');
+    b.textContent = speakOn ? '🔊 Voice replies: on' : '🔊 Voice replies: off';
+    b.classList.toggle('on', speakOn);
+    if (speakOn) { chosenVoice = pickVoice(); say('Voice on. Tell me what you would like to build.'); }
+    else if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  function setupVoice() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      const m = document.getElementById('micBtn');
+      if (m) { m.disabled = true; m.textContent = '🎤 Dictation not supported here'; }
+      return;
+    }
+    recog = new SR();
+    recog.lang = 'en-GB';
+    recog.continuous = true;
+    recog.interimResults = true;
+
+    recog.onresult = function (e) {
+      const box = document.getElementById('appDesc');
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          box.value = (box.value ? box.value.trim() + ' ' : '') + t.trim();
+        } else {
+          interim += t;
+        }
+      }
+      document.getElementById('heardLine').textContent = interim ? '… ' + interim : '';
+    };
+
+    recog.onerror = function (e) {
+      document.getElementById('heardLine').textContent =
+        e.error === 'not-allowed'
+          ? 'Microphone blocked — allow it in your browser settings.'
+          : 'Dictation stopped (' + e.error + ').';
+      stopMic();
+    };
+
+    recog.onend = function () { if (listening) { try { recog.start(); } catch (_) {} } };
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = function () { chosenVoice = pickVoice(); };
+    }
+  }
+
+  function stopMic() {
+    listening = false;
+    const b = document.getElementById('micBtn');
+    if (b) { b.classList.remove('listening'); b.textContent = '🎤 Speak your app'; }
+    if (recog) { try { recog.stop(); } catch (_) {} }
+  }
+
+  function toggleMic() {
+    if (!recog) { setupVoice(); if (!recog) return; }
+    if (listening) { stopMic(); say('Got it.'); return; }
+    listening = true;
+    const b = document.getElementById('micBtn');
+    b.classList.add('listening');
+    b.textContent = '⏹ Stop and keep it';
+    document.getElementById('heardLine').textContent = 'Listening…';
+    try { recog.start(); } catch (_) {}
+  }
+
+  setupVoice();
+
 
   let govReleased = false;
 
