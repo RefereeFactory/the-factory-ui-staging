@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Governance — The Factory 🏭</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d0d0f;
+    background-image: radial-gradient(circle at 20% 10%, rgba(240,165,0,0.06), transparent 40%);
+    color: #eee; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; padding: 40px 16px;
+  }
+  .wrap { width: 100%; max-width: 720px; }
+  header { text-align: center; margin-bottom: 28px; }
+  .eyebrow { font-size: 12px; letter-spacing: 5px; color: #999; text-transform: uppercase; margin-bottom: 12px; }
+  .logo { font-size: 40px; }
+  h1 { font-size: 26px; letter-spacing: 3px; font-weight: 800; margin-top: 6px; }
+  h1 span { color: #f0a500; }
+  .tagline { color: #888; font-size: 13.5px; letter-spacing: 1.5px; margin-top: 8px; }
+  .card {
+    background: #16161a; border: 1px solid #26262c; border-radius: 16px;
+    padding: 28px; margin-bottom: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .held-banner {
+    background: #2b2107; border: 1px solid #f0a500; color: #f0a500;
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;
+    font-size: 14.5px; text-align: center; font-weight: 800; letter-spacing: 1px; line-height: 1.7;
+  }
+  .status-msg { font-size: 15px; color: #ccc; line-height: 1.8; text-align: center; }
+  .stamp { font-size: 12px; letter-spacing: 1.5px; color: #777; text-transform: uppercase; margin-top: 18px; text-align: center; }
+  h2 { font-size: 16px; font-weight: 800; color: #f0a500; margin: 26px 0 8px; }
+  h2:first-of-type { margin-top: 0; }
+  p { font-size: 14.5px; color: #bbb; line-height: 1.75; }
+  p + p { margin-top: 10px; }
+  a { color: #f0a500; }
+  .hidden { display: none !important; }
+  .back-btn {
+    display: inline-block; margin-top: 8px; padding: 13px 26px;
+    background: linear-gradient(135deg, #f0a500, #d48800); color: #111;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 800;
+    letter-spacing: 1px; text-decoration: none;
+  }
+  .center { text-align: center; }
+  footer { color: #555; font-size: 12px; margin-top: 26px; text-align: center; line-height: 1.8; }
+  footer a { color: #777; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Referee Innovations</div>
+    <div class="logo">🏭</div>
+    <h1>OPEN <span>GOVERNANCE</span></h1>
+    <div class="tagline">THE FACTORY — WRITTEN IN THE OPEN</div>
+  </header>
+
+  <div id="loading" class="card"><p class="center">Loading…</p></div>
+
+  <div id="heldView" class="hidden">
+    <div class="held-banner">🔒 IN PREPARATION</div>
+    <div class="card">
+      <p class="status-msg" id="statusMsg"></p>
+      <div class="stamp" id="stamp"></div>
+      <div class="center" style="margin-top:26px;">
+        <a class="back-btn" href="/">← Back to The Factory</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="releasedView" class="hidden">
+    <div class="card">
+      <p class="status-msg" id="releasedNote"></p>
+      <div class="stamp" id="stamp2"></div>
+      <div class="center" style="margin-top:26px;">
+        <a class="back-btn" href="/">← Back to The Factory</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Built with The Factory 🏭 · You own everything we build for you.<br>
+    The Factory is a <strong>Referee Innovations</strong> company · <a href="https://factory-love-between-nations.netlify.app" target="_blank">Our Manifesto</a>
+  </footer>
+</div>
+
+<script>
+  const SB_URL = 'https://canvbkibjgcnqowjtarf.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhbnZia2liamdjbnFvd2p0YXJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NzE0NDYsImV4cCI6MjA5OTM0NzQ0Nn0.TLskVoTaYI90avy09IuM_kkKvAYUMETTntZkn2M807I';
+  const sb = supabase.createClient(SB_URL, SB_ANON);
+
+  function stampText(ts) {
+    if (!ts) return '';
+    try { return 'Last updated ' + new Date(ts).toLocaleString(); } catch (_) { return ''; }
+  }
+
+  (async function () {
+    let row = null;
+    try {
+      const { data } = await sb.from('site_settings').select('value, updated_at').eq('key', 'governance').single();
+      row = data;
+    } catch (_) { /* fall through to held view */ }
+
+    document.getElementById('loading').classList.add('hidden');
+    const val = (row && row.value) || {};
+    const released = val.released === true;
+
+    if (released) {
+      document.getElementById('releasedNote').textContent = val.status || 'This page is now open.';
+      document.getElementById('stamp2').textContent = stampText(row && row.updated_at);
+      document.getElementById('releasedView').classList.remove('hidden');
+    } else {
+      document.getElementById('statusMsg').textContent =
+        val.status || "This page is being written in the open, at the founder's pace — the business comes first.";
+      document.getElementById('stamp').textContent = stampText(row && row.updated_at);
+      document.getElementById('heldView').classList.remove('hidden');
+    }
+  })();
+</script>
+</body>
+</html>
