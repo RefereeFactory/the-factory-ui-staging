@@ -70,24 +70,32 @@
     color: #eee; padding: 13px 15px; font-size: 15px; font-family: inherit; outline: none;
   }
   input:focus, textarea:focus { border-color: #f0a500; }
-  .voice-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-  .mic-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 11px 20px; background: #16161a; border: 1.5px solid #f0a500;
-    color: #f0a500; border-radius: 999px; font-size: 13.5px; font-weight: 800;
+  .agent-row { display: flex; gap: 10px; align-items: center; margin: 16px 0 0; flex-wrap: wrap; }
+  .agent-btn {
+    flex: 1; min-width: 240px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 16px 22px;
+    background: linear-gradient(135deg, #f0a500, #d48800);
+    color: #111; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 800; letter-spacing: 1px;
     cursor: pointer; font-family: inherit;
+    box-shadow: 0 0 24px rgba(240,165,0,0.30);
   }
-  .mic-btn.listening { background: #f0a500; color: #111; animation: micpulse 1.2s infinite; }
-  .mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  @keyframes micpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(240,165,0,0.5);} 50% { box-shadow: 0 0 0 10px rgba(240,165,0,0);} }
-  .speak-toggle {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 11px 18px; background: #0d0d0f; border: 1.5px solid #2c2c33;
-    color: #999; border-radius: 999px; font-size: 13px; font-weight: 700;
-    cursor: pointer; font-family: inherit;
+  .agent-btn.live { background: #16161a; color: #f0a500; border: 1.5px solid #f0a500; animation: agentpulse 1.3s infinite; }
+  .agent-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  @keyframes agentpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(240,165,0,0.45);} 50% { box-shadow: 0 0 0 12px rgba(240,165,0,0);} }
+  .agent-state { font-size: 12.5px; color: #888; margin-top: 10px; min-height: 17px; font-style: italic; }
+  .convo {
+    margin-top: 14px; border: 1px solid #2c2c33; border-radius: 12px;
+    background: #0d0d0f; padding: 14px; max-height: 300px; overflow-y: auto;
   }
-  .speak-toggle.on { border-color: #f0a500; color: #f0a500; }
-  .heard { font-size: 12.5px; color: #666; margin-top: 8px; min-height: 16px; font-style: italic; }
+  .convo .line { font-size: 14px; line-height: 1.7; margin-bottom: 10px; }
+  .convo .line:last-child { margin-bottom: 0; }
+  .convo .who { font-weight: 800; font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .convo .factory .who { color: #f0a500; }
+  .convo .you .who { color: #7ee2a8; }
+  .convo .line p { margin: 0; color: #ccc; }
+  .manual-toggle { background: none; border: none; color: #777; font-size: 12.5px; cursor: pointer; text-decoration: underline; padding: 0; margin-top: 12px; font-family: inherit; }
   .hint { font-size: 12px; color: #666; margin-top: 6px; }
   .build-btn {
     width: 100%; margin-top: 22px; padding: 16px;
@@ -116,6 +124,27 @@
   .plan button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 14px; }
   .plan.best button { background: linear-gradient(135deg, #f0a500, #d48800); color: #111; }
   .plan:not(.best) button { background: #26262c; color: #eee; }
+  .app-row {
+    background: #0d0d0f; border: 1px solid #2c2c33; border-radius: 12px;
+    padding: 16px; margin-bottom: 12px;
+  }
+  .app-row .a-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .app-row .a-name { font-size: 14.5px; color: #eee; font-weight: 700; }
+  .app-row .a-link { font-size: 12.5px; color: #f0a500; word-break: break-all; }
+  .app-row .a-change {
+    background: none; border: 1px solid #f0a500; color: #f0a500;
+    border-radius: 8px; padding: 7px 14px; cursor: pointer;
+    font-size: 12.5px; font-weight: 700; font-family: inherit; white-space: nowrap;
+  }
+  .updating-banner {
+    background: #2b2107; border: 1px solid #f0a500; color: #f0a500;
+    border-radius: 10px; padding: 12px 14px; margin-top: 14px;
+    font-size: 13.5px; line-height: 1.6;
+  }
+  .updating-banner button {
+    background: none; border: none; color: #d8b878; text-decoration: underline;
+    cursor: pointer; font-size: 12.5px; padding: 0; margin-left: 6px; font-family: inherit;
+  }
   .empty-state { border: 1.5px dashed #2c2c33; border-radius: 12px; padding: 24px; text-align: center; color: #777; font-size: 13.5px; line-height: 1.7; }
   .enquiry {
     background: #0d0d0f; border: 1px solid #2c2c33; border-radius: 12px;
@@ -230,11 +259,11 @@
     <div class="hint">Lowercase letters and hyphens work best — we'll tidy it if needed.</div>
     <label>Describe Your App</label>
     <textarea id="appDesc" rows="4" placeholder="A booking page for my barbershop in London. Dark style, show services and prices, opening hours, and a booking form..."></textarea>
-    <div class="voice-row" id="voiceRow">
-      <button type="button" class="mic-btn" id="micBtn" onclick="toggleMic()">🎤 Speak your app</button>
-      <button type="button" class="speak-toggle" id="speakToggle" onclick="toggleSpeak()">🔊 Voice replies: off</button>
+    <div class="agent-row">
+      <button type="button" class="agent-btn" id="agentBtn" onclick="toggleAgent()">🎤 Tell me what you want to build</button>
     </div>
-    <div class="heard" id="heardLine"></div>
+    <div class="agent-state" id="agentState"></div>
+    <div class="convo hidden" id="convoLog"></div>
     <button class="build-btn" id="buildBtn" onclick="startBuild()">⚙ BUILD</button>
   </div>
 
@@ -255,6 +284,13 @@
         <button onclick="checkout('extra')">Buy 1 Build</button>
       </div>
     </div>
+  </div>
+
+  <div class="card hidden" id="appsCard">
+    <div class="section-title">🔧 Your apps</div>
+    <div class="section-sub">Everything The Factory has built for you. Changed your prices, hours or wording? Tell us what to change — the live page updates in about ninety seconds.</div>
+    <div id="appsList"></div>
+    <div class="empty-state hidden" id="appsEmpty">Nothing built yet. Your apps will appear here.</div>
   </div>
 
   <div class="card hidden" id="statusCard">
@@ -353,6 +389,7 @@
     const { data } = await sb.from('users').select('builds_remaining, is_founder').eq('auth_id', session.user.id).single();
     if (data) {
       document.getElementById('creditsBadge').textContent = (data.builds_remaining ?? 0) + ' builds left';
+      loadApps(data.id);
       if (data.is_founder) { loadInbox(); loadGovernance(); }
     }
   }
@@ -449,7 +486,11 @@
   async function startBuild() {
     const name = document.getElementById('appName').value.trim();
     const desc = document.getElementById('appDesc').value.trim();
-    if (!name || !desc) { alert('Give your app a name and a description.'); return; }
+    if (updateRepo) {
+      if (!desc) { alert('Tell us what you would like changed.'); return; }
+    } else if (!name || !desc) {
+      alert('Give your app a name and a description.'); return;
+    }
 
     document.getElementById('buildBtn').disabled = true;
     document.getElementById('statusCard').classList.remove('hidden');
@@ -462,7 +503,7 @@
       const res = await fetch(WORKER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ repoName: name, description: desc })
+        body: JSON.stringify(updateRepo ? { repoName: updateRepo, description: desc, mode: 'update' } : { repoName: name, description: desc })
       });
       const data = await res.json();
       if (res.status === 402) {
@@ -516,180 +557,327 @@
     document.getElementById('statusCard').classList.add('hidden');
   }
 
-  // ---------------- voice ----------------
-  // Speech OUT: ElevenLabs via the voice-speak edge function when available,
-  // otherwise the browser engine. The API key never touches this page.
-  // Speech IN: paused automatically whenever we are speaking, so the Factory
-  // never dictates its own words into your app description.
-  const TTS_FN = SB_URL + '/functions/v1/voice-speak';
+  // ---------------- your apps ----------------
+  let updateRepo = null;   // repo name when changing an existing app
 
+  async function loadApps(userRowId) {
+    if (!userRowId) return;
+    const card = document.getElementById('appsCard');
+    const list = document.getElementById('appsList');
+    const empty = document.getElementById('appsEmpty');
+
+    const { data, error } = await sb.from('builds')
+      .select('repo_name, site_url, updated_at')
+      .eq('user_id', userRowId)
+      .eq('status', 'done')
+      .order('updated_at', { ascending: false });
+
+    if (error) { console.warn('apps read:', error.message); return; }
+    card.classList.remove('hidden');
+    list.innerHTML = '';
+
+    // One row per app, newest first, no duplicates after an update.
+    const seen = {};
+    const apps = (data || []).filter(function (b) {
+      if (!b.repo_name || seen[b.repo_name]) return false;
+      seen[b.repo_name] = true;
+      return true;
+    });
+
+    if (!apps.length) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+
+    for (const app of apps) {
+      const row = document.createElement('div');
+      row.className = 'app-row';
+      row.innerHTML =
+        '<div class="a-top"><span class="a-name"></span>' +
+        '<button class="a-change">✏️ Change this app</button></div>' +
+        '<a class="a-link" target="_blank"></a>';
+      row.querySelector('.a-name').textContent = app.repo_name;
+      const link = row.querySelector('.a-link');
+      link.textContent = app.site_url || '(no address)';
+      if (app.site_url) link.href = app.site_url;
+      row.querySelector('.a-change').onclick = function () { startUpdate(app.repo_name); };
+      list.appendChild(row);
+    }
+  }
+
+  function startUpdate(repo) {
+    updateRepo = repo;
+    if (typeof showManual === 'function') showManual();
+
+    const nameBox = document.getElementById('appName');
+    nameBox.value = repo;
+    nameBox.disabled = true;
+
+    const desc = document.getElementById('appDesc');
+    desc.value = '';
+    desc.placeholder = 'What would you like changed? For example: change the phone number to 07700 900123, add a Sunday opening time, make the header green.';
+
+    let banner = document.getElementById('updatingBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.className = 'updating-banner';
+      banner.id = 'updatingBanner';
+      const card = document.getElementById('buildCard');
+      card.insertBefore(banner, document.getElementById('buildBtn'));
+    }
+    banner.innerHTML = '';
+    banner.appendChild(document.createTextNode('✏️ Changing your existing app: ' + repo + '. Everything else stays exactly as it is.'));
+    const cancel = document.createElement('button');
+    cancel.textContent = 'cancel';
+    cancel.onclick = cancelUpdate;
+    banner.appendChild(cancel);
+
+    document.getElementById('buildBtn').textContent = '✏️ APPLY CHANGE';
+    document.getElementById('buildCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelUpdate() {
+    updateRepo = null;
+    const nameBox = document.getElementById('appName');
+    nameBox.disabled = false;
+    nameBox.value = '';
+    const desc = document.getElementById('appDesc');
+    desc.value = '';
+    desc.placeholder = 'A booking page for my barbershop in London. Dark style, show services and prices, opening hours, and a booking form...';
+    const banner = document.getElementById('updatingBanner');
+    if (banner) banner.remove();
+    document.getElementById('buildBtn').textContent = '⚙ BUILD';
+  }
+
+
+  // ---------------- the front desk ----------------
+  // One button. The agent asks until it has a brief worth building, speaks
+  // through ElevenLabs when available, and mutes the microphone while it talks
+  // so it can never dictate its own words into the brief.
+  const AGENT_FN = SB_URL + '/functions/v1/voice-agent';
+  const TTS_FN   = SB_URL + '/functions/v1/voice-speak';
+
+  let convo = [];
+  let convoOn = false;
   let recog = null;
-  let wantListening = false;   // what the user asked for
-  let speaking = false;        // true while audio is playing
-  let speakOn = false;
+  let speaking = false;
+  let listening = false;
   let chosenVoice = null;
-  let ttsAvailable = null;     // null = untested, true/false once known
+  let ttsAvailable = null;
   let currentAudio = null;
+
+  function agentSetState(t) {
+    const el = document.getElementById('agentState');
+    if (el) el.textContent = t || '';
+  }
+
+  function addLine(who, text) {
+    const log = document.getElementById('convoLog');
+    log.classList.remove('hidden');
+    const d = document.createElement('div');
+    d.className = 'line ' + (who === 'You' ? 'you' : 'factory');
+    const w = document.createElement('span');
+    w.className = 'who';
+    w.textContent = who;
+    const p = document.createElement('p');
+    p.textContent = text;
+    d.appendChild(w); d.appendChild(p);
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
 
   function pickVoice() {
     const vs = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
     if (!vs.length) return null;
-    const liked = ['Samantha', 'Serena', 'Karen', 'Daniel',
-                   'Google UK English Female', 'Google UK English Male'];
-    for (const name of liked) {
-      const hit = vs.find(v => v.name === name);
-      if (hit) return hit;
-    }
-    return vs.find(v => /^en[-_]GB/i.test(v.lang)) ||
-           vs.find(v => /^en/i.test(v.lang)) || vs[0];
-  }
-
-  // Pause the microphone for as long as we are talking.
-  function beginSpeaking() {
-    speaking = true;
-    if (recog && wantListening) { try { recog.stop(); } catch (_) {} }
-    const h = document.getElementById('heardLine');
-    if (h && wantListening) h.textContent = 'Microphone paused while speaking…';
-  }
-
-  function endSpeaking() {
-    speaking = false;
-    currentAudio = null;
-    if (recog && wantListening) {
-      setTimeout(function () {
-        if (wantListening && !speaking) {
-          try { recog.start(); } catch (_) {}
-          const h = document.getElementById('heardLine');
-          if (h) h.textContent = 'Listening…';
-        }
-      }, 350);
-    }
+    const liked = ['Samantha', 'Serena', 'Karen', 'Daniel', 'Google UK English Female'];
+    for (const n of liked) { const hit = vs.find(v => v.name === n); if (hit) return hit; }
+    return vs.find(v => /^en[-_]GB/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || vs[0];
   }
 
   function browserSay(text) {
-    if (!window.speechSynthesis) { endSpeaking(); return; }
-    try {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      if (!chosenVoice) chosenVoice = pickVoice();
-      if (chosenVoice) u.voice = chosenVoice;
-      u.rate = 1.0; u.pitch = 1.0;
-      u.onend = endSpeaking;
-      u.onerror = endSpeaking;
-      window.speechSynthesis.speak(u);
-    } catch (_) { endSpeaking(); }
+    return new Promise(function (resolve) {
+      if (!window.speechSynthesis) { resolve(); return; }
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        if (!chosenVoice) chosenVoice = pickVoice();
+        if (chosenVoice) u.voice = chosenVoice;
+        u.onend = resolve; u.onerror = resolve;
+        window.speechSynthesis.speak(u);
+      } catch (_) { resolve(); }
+    });
   }
 
-  async function say(text) {
-    if (!speakOn) return;
-    beginSpeaking();
-
-    if (ttsAvailable === false) { browserSay(text); return; }
+  // Speaks and resolves only when the sound has finished.
+  async function speakAsync(text) {
+    if (!text) return;
+    speaking = true;
+    if (recog && listening) { try { recog.stop(); } catch (_) {} }
+    agentSetState('Speaking…');
 
     try {
-      const headers = { 'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + (session ? session.access_token : SB_ANON) };
+      if (ttsAvailable === false) throw new Error('fallback');
       const res = await fetch(TTS_FN, {
-        method: 'POST', headers: headers, body: JSON.stringify({ text: text })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'Authorization': 'Bearer ' + (session ? session.access_token : SB_ANON) },
+        body: JSON.stringify({ text: text })
       });
       if (!res.ok) throw new Error('tts ' + res.status);
       const blob = await res.blob();
-      if (!blob || blob.size < 200) throw new Error('empty audio');
+      if (!blob || blob.size < 200) throw new Error('empty');
       ttsAvailable = true;
-      const audio = new Audio(URL.createObjectURL(blob));
-      currentAudio = audio;
-      audio.onended = endSpeaking;
-      audio.onerror = function () { browserSay(text); };
-      await audio.play();
+      await new Promise(function (resolve) {
+        const a = new Audio(URL.createObjectURL(blob));
+        currentAudio = a;
+        a.onended = resolve;
+        a.onerror = function () { browserSay(text).then(resolve); };
+        a.play().catch(function () { browserSay(text).then(resolve); });
+      });
     } catch (_) {
-      ttsAvailable = false;       // stop trying for the rest of the session
-      browserSay(text);
+      if (ttsAvailable !== true) ttsAvailable = false;
+      await browserSay(text);
     }
+
+    currentAudio = null;
+    speaking = false;
   }
 
-  function stopSpeaking() {
+  function say(text) { speakAsync(text); }   // fire and forget, for build updates
+
+  function stopAllSound() {
     if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch (_) {} }
     if (currentAudio) { try { currentAudio.pause(); } catch (_) {} }
     speaking = false;
   }
 
-  function toggleSpeak() {
-    speakOn = !speakOn;
-    const b = document.getElementById('speakToggle');
-    b.textContent = speakOn ? '🔊 Voice replies: on' : '🔊 Voice replies: off';
-    b.classList.toggle('on', speakOn);
-    if (speakOn) { chosenVoice = pickVoice(); say('Voice on. Tell me what you would like to build.'); }
-    else { stopSpeaking(); endSpeaking(); }
-  }
-
-  function setupVoice() {
+  function setupRecog() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      const m = document.getElementById('micBtn');
-      if (m) { m.disabled = true; m.textContent = '🎤 Dictation not supported here'; }
-      return;
-    }
-    recog = new SR();
-    recog.lang = 'en-GB';
-    recog.continuous = true;
-    recog.interimResults = true;
+    if (!SR) return null;
+    const r = new SR();
+    r.lang = 'en-GB';
+    r.continuous = false;
+    r.interimResults = true;
 
-    recog.onresult = function (e) {
-      if (speaking) return;               // never transcribe our own voice
-      const box = document.getElementById('appDesc');
-      let interim = '';
+    r.onresult = function (e) {
+      if (speaking) return;
+      let finalText = '', interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) {
-          box.value = (box.value ? box.value.trim() + ' ' : '') + t.trim();
-        } else {
-          interim += t;
-        }
+        if (e.results[i].isFinal) finalText += t; else interim += t;
       }
-      document.getElementById('heardLine').textContent = interim ? '… ' + interim : '';
+      if (interim) agentSetState('… ' + interim);
+      if (finalText.trim()) {
+        listening = false;
+        try { r.stop(); } catch (_) {}
+        agentTurn(finalText.trim());
+      }
     };
 
-    recog.onerror = function (e) {
-      if (e.error === 'aborted' || e.error === 'no-speech') return;
-      document.getElementById('heardLine').textContent =
-        e.error === 'not-allowed'
-          ? 'Microphone blocked — allow it in your browser settings.'
-          : 'Dictation stopped (' + e.error + ').';
-      stopMic();
+    r.onerror = function (e) {
+      if (e.error === 'aborted') return;
+      if (e.error === 'not-allowed') {
+        agentSetState('Microphone blocked — allow it, or use "type it instead".');
+        endConversation();
+        return;
+      }
+      if (e.error === 'no-speech' && convoOn && !speaking) { listenOnce(); }
     };
 
-    // restart only if the user still wants it AND we are not talking
-    recog.onend = function () {
-      if (wantListening && !speaking) { try { recog.start(); } catch (_) {} }
+    r.onend = function () {
+      if (convoOn && listening && !speaking) { try { r.start(); } catch (_) {} }
     };
-
-    if (window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = function () { chosenVoice = pickVoice(); };
-    }
+    return r;
   }
 
-  function stopMic() {
-    wantListening = false;
-    const b = document.getElementById('micBtn');
-    if (b) { b.classList.remove('listening'); b.textContent = '🎤 Speak your app'; }
-    if (recog) { try { recog.stop(); } catch (_) {} }
-    const h = document.getElementById('heardLine');
-    if (h) h.textContent = '';
-  }
-
-  function toggleMic() {
-    if (!recog) { setupVoice(); if (!recog) return; }
-    if (wantListening) { stopMic(); say('Got it.'); return; }
-    stopSpeaking();                       // never listen over our own voice
-    wantListening = true;
-    const b = document.getElementById('micBtn');
-    b.classList.add('listening');
-    b.textContent = '⏹ Stop and keep it';
-    document.getElementById('heardLine').textContent = 'Listening…';
+  function listenOnce() {
+    if (!convoOn || speaking) return;
+    if (!recog) { recog = setupRecog(); }
+    if (!recog) { agentSetState('Dictation is not supported in this browser — use "type it instead".'); return; }
+    listening = true;
+    agentSetState('Listening — speak now.');
     try { recog.start(); } catch (_) {}
   }
 
-  setupVoice();
+  async function agentTurn(userText) {
+    if (userText) { convo.push({ role: 'user', content: userText }); addLine('You', userText); }
+    agentSetState('Thinking…');
+
+    let d = null;
+    try {
+      const res = await fetch(AGENT_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'Authorization': 'Bearer ' + (session ? session.access_token : SB_ANON) },
+        body: JSON.stringify({ messages: convo, email: session ? session.user.email : '' })
+      });
+      d = await res.json();
+      if (!res.ok || d.error) throw new Error(d && d.error ? d.error : 'agent ' + res.status);
+    } catch (err) {
+      agentSetState('The front desk is unavailable just now — please type it instead.');
+      showManual();
+      endConversation();
+      return;
+    }
+
+    convo.push({ role: 'assistant', content: d.reply });
+    addLine('Factory', d.reply);
+    await speakAsync(d.reply);
+
+    if (d.status === 'ready') {
+      if (d.app_name) document.getElementById('appName').value = d.app_name;
+      if (d.description) document.getElementById('appDesc').value = d.description;
+      showManual();
+      endConversation();
+      agentSetState('Ready — check the brief below, then press BUILD.');
+      document.getElementById('buildBtn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (convoOn) listenOnce();
+  }
+
+  function showManual() {
+    document.querySelectorAll('#buildCard label, #appName, #appDesc, .hint')
+      .forEach(function (el) { el.classList.remove('hidden'); });
+    const t = document.getElementById('manualToggle');
+    if (t) t.classList.add('hidden');
+  }
+
+  function endConversation() {
+    convoOn = false;
+    listening = false;
+    stopAllSound();
+    if (recog) { try { recog.stop(); } catch (_) {} }
+    const b = document.getElementById('agentBtn');
+    b.classList.remove('live');
+    b.textContent = '🎤 Tell me what you want to build';
+  }
+
+  async function toggleAgent() {
+    if (convoOn) { endConversation(); agentSetState('Stopped.'); return; }
+    convo = [];
+    document.getElementById('convoLog').innerHTML = '';
+    convoOn = true;
+    const b = document.getElementById('agentBtn');
+    b.classList.add('live');
+    b.textContent = '⏹ End conversation';
+    if (!recog) recog = setupRecog();
+    await agentTurn('');
+  }
+
+  // Manual entry stays available, folded away until asked for.
+  (function foldManual() {
+    const card = document.getElementById('buildCard');
+    if (!card) return;
+    const hideThese = card.querySelectorAll('label, #appName, #appDesc, .hint');
+    hideThese.forEach(function (el) { el.classList.add('hidden'); });
+    const t = document.createElement('button');
+    t.type = 'button';
+    t.className = 'manual-toggle';
+    t.id = 'manualToggle';
+    t.textContent = 'or type it instead';
+    t.onclick = showManual;
+    const row = document.querySelector('.agent-row');
+    if (row && row.parentNode) row.parentNode.insertBefore(t, row.nextSibling);
+  })();
 
 
   let govReleased = false;
