@@ -77,6 +77,28 @@
     <p class="status-msg" id="collabMsg"></p>
   </div>
 
+  <div id="editorCard" class="card hidden" style="border-color:#f0a500;">
+    <div class="section-title">✏️ Founder editing</div>
+    <p style="margin-bottom:14px;">Signed in as <span id="whoami" style="color:#f0a500;"></span>. Only the founder can save; others are refused by the database.</p>
+
+    <label style="display:block;font-size:12px;letter-spacing:1.5px;color:#999;margin:16px 0 8px;text-transform:uppercase;">Where this work has reached</label>
+    <textarea id="edStatus" rows="4" style="width:100%;background:#0d0d0f;border:1.5px solid #2c2c33;border-radius:10px;color:#eee;padding:13px 15px;font-size:15px;font-family:inherit;"></textarea>
+
+    <label style="display:block;font-size:12px;letter-spacing:1.5px;color:#999;margin:16px 0 8px;text-transform:uppercase;">Message for would-be collaborators</label>
+    <textarea id="edNote" rows="4" style="width:100%;background:#0d0d0f;border:1.5px solid #2c2c33;border-radius:10px;color:#eee;padding:13px 15px;font-size:15px;font-family:inherit;"></textarea>
+
+    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button id="edSave" onclick="edSaveMsgs()" style="padding:13px 26px;background:linear-gradient(135deg,#f0a500,#d48800);color:#111;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;">Save messages</button>
+      <button id="edToggle" onclick="edToggleRelease()" style="padding:13px 26px;background:#26262c;color:#eee;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;">Release page</button>
+      <span id="edState" style="border:1px solid #f0a500;color:#f0a500;border-radius:20px;padding:5px 14px;font-weight:700;font-size:13px;">–</span>
+      <span id="edOk" class="hidden" style="color:#7ee2a8;font-size:14px;">✓ Saved.</span>
+    </div>
+  </div>
+
+  <div id="signinCard" class="card hidden">
+    <p class="center">Founder editing — <a href="/" >sign in on the front page</a>, then return here.</p>
+  </div>
+
   <div class="card">
     <div class="section-title">The core principles</div>
     <p style="margin-bottom:16px;">Everything on this page, and anything agreed through it, must align with these two. Nothing is committed to without consultation, and nothing that fails these is committed to at all.</p>
@@ -100,7 +122,7 @@
 
   <footer>
     Built with The Factory 🏭 · You own everything we build for you.<br>
-    The Factory is a <strong>Referee Innovations</strong> company · <a href="https://factory-love-between-nations.netlify.app" target="_blank">Our Manifesto</a>
+    <span style="color:#f0a500;font-weight:700;">v4</span> · The Factory is a <strong>Referee Innovations</strong> company · <a href="https://factory-love-between-nations.netlify.app" target="_blank">Our Manifesto</a>
   </footer>
 </div>
 
@@ -139,6 +161,49 @@
       document.getElementById('collabMsg').textContent = val.note;
       document.getElementById('noteCard').classList.remove('hidden');
     }
+    // ---- founder editing ----
+    let edReleased = released;
+
+    function paint(val2, rel) {
+      document.getElementById('edStatus').value = val2.status || '';
+      document.getElementById('edNote').value = val2.note || '';
+      document.getElementById('edState').textContent = rel ? 'RELEASED' : 'HELD';
+      document.getElementById('edToggle').textContent = rel ? 'Hold page' : 'Release page';
+    }
+
+    const { data: sess } = await sb.auth.getSession();
+    if (sess && sess.session) {
+      document.getElementById('whoami').textContent = sess.session.user.email;
+      paint(val, released);
+      document.getElementById('editorCard').classList.remove('hidden');
+    } else {
+      document.getElementById('signinCard').classList.remove('hidden');
+    }
+
+    window.edWrite = async function (rel) {
+      const payload = {
+        released: rel,
+        status: document.getElementById('edStatus').value.trim(),
+        note: document.getElementById('edNote').value.trim()
+      };
+      const { error } = await sb.from('site_settings')
+        .update({ value: payload, updated_at: new Date().toISOString() })
+        .eq('key', 'governance');
+      if (error) { alert('Could not save — ' + error.message); return false; }
+      edReleased = rel;
+      paint(payload, rel);
+      const ok = document.getElementById('edOk');
+      ok.classList.remove('hidden');
+      setTimeout(() => ok.classList.add('hidden'), 2500);
+      return true;
+    };
+
+    window.edSaveMsgs = function () { window.edWrite(edReleased); };
+    window.edToggleRelease = function () {
+      const next = !edReleased;
+      if (!confirm(next ? 'Release this page to the public?' : 'Hold this page again?')) return;
+      window.edWrite(next);
+    };
   })();
 </script>
 </body>
