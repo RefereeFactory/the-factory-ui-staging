@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Factory 🏭 — a Referee Innovations company</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d0d0f;
+    background-image: radial-gradient(circle at 20% 10%, rgba(240,165,0,0.06), transparent 40%);
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px;
+  }
+  .wrap { width: 100%; max-width: 640px; }
+  header { text-align: center; margin-bottom: 36px; }
+  .eyebrow { font-size: 12px; letter-spacing: 5px; color: #999; text-transform: uppercase; margin-bottom: 12px; }
+  .logo { font-size: 44px; }
+  h1 { font-size: 30px; letter-spacing: 4px; font-weight: 800; margin-top: 6px; }
+  h1 span { color: #f0a500; }
+  .tagline { color: #888; font-size: 14px; letter-spacing: 1.5px; margin-top: 6px; }
+  .defline { color: #bbb; font-size: 14.5px; margin-top: 14px; line-height: 1.7; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .card {
+    background: #16161a;
+    border: 1px solid #26262c;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .hidden { display: none !important; }
+  .banner {
+    background: #10321a;
+    border: 1px solid #28a745;
+    color: #7ee2a8;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+  }
+  .inbox-banner {
+    background: #2b2107;
+    border: 1px solid #f0a500;
+    color: #f0a500;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+    font-weight: 700;
+  }
+  .g-btn {
+    width: 100%; padding: 14px; background: #fff; color: #1f1f1f; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .signin-note { text-align: center; color: #777; font-size: 13px; margin-top: 14px; line-height: 1.6; }
+  .userbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; font-size: 13px; color: #999; flex-wrap: wrap; gap: 8px; }
+  .credits { background: #0d0d0f; border: 1px solid #f0a500; color: #f0a500; border-radius: 20px; padding: 5px 14px; font-weight: 700; font-size: 13px; }
+  .signout { background: none; border: 1px solid #333; color: #999; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+  label { display: block; font-size: 12px; letter-spacing: 1.5px; color: #999; margin: 16px 0 8px; text-transform: uppercase; }
+  input, textarea {
+    width: 100%; background: #0d0d0f; border: 1.5px solid #2c2c33; border-radius: 10px;
+    color: #eee; padding: 13px 15px; font-size: 15px; font-family: inherit; outline: none;
+  }
+  input:focus, textarea:focus { border-color: #f0a500; }
+  .hint { font-size: 12px; color: #666; margin-top: 6px; }
+  .build-btn {
+    width: 100%; margin-top: 22px; padding: 16px;
+    background: linear-gradient(135deg, #f0a500, #d48800);
+    color: #111; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 800; letter-spacing: 2px; cursor: pointer;
+    box-shadow: 0 0 24px rgba(240,165,0,0.35);
+  }
+  .build-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .small-btn {
+    margin-top: 16px; padding: 13px 26px;
+    background: linear-gradient(135deg, #f0a500, #d48800);
+    color: #111; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 800; cursor: pointer;
+  }
+  .small-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .form-ok { color: #7ee2a8; font-size: 14px; margin-top: 14px; }
+  .section-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; color: #f0a500; }
+  .section-sub { font-size: 13.5px; color: #999; margin-bottom: 12px; line-height: 1.7; }
+  .plan-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .plan { flex: 1; min-width: 220px; background: #0d0d0f; border: 1.5px solid #2c2c33; border-radius: 12px; padding: 18px; }
+  .plan.best { border-color: #f0a500; }
+  .plan .p-name { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
+  .plan .p-price { font-size: 22px; font-weight: 800; color: #f0a500; margin-bottom: 6px; }
+  .plan .p-desc { font-size: 12.5px; color: #888; margin-bottom: 14px; line-height: 1.5; }
+  .plan button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 14px; }
+  .plan.best button { background: linear-gradient(135deg, #f0a500, #d48800); color: #111; }
+  .plan:not(.best) button { background: #26262c; color: #eee; }
+  .empty-state { border: 1.5px dashed #2c2c33; border-radius: 12px; padding: 24px; text-align: center; color: #777; font-size: 13.5px; line-height: 1.7; }
+  .enquiry {
+    background: #0d0d0f; border: 1px solid #2c2c33; border-radius: 12px;
+    padding: 16px; margin-bottom: 12px;
+  }
+  .enquiry .e-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .enquiry .e-who { font-size: 13.5px; color: #ddd; font-weight: 700; }
+  .kind-tag { font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; border-radius: 12px; padding: 3px 10px; font-weight: 800; }
+  .kind-enquiry { background: #10321a; color: #7ee2a8; border: 1px solid #28a745; }
+  .kind-candidate { background: #1a2440; color: #8ab4ff; border: 1px solid #4a6fd4; }
+  .enquiry .e-msg { font-size: 13.5px; color: #bbb; line-height: 1.65; margin-bottom: 10px; white-space: pre-wrap; }
+  .enquiry .e-meta { font-size: 11.5px; color: #666; margin-bottom: 10px; }
+  .mark-read { background: none; border: 1px solid #f0a500; color: #f0a500; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 12px; font-weight: 700; }
+  .steps { display: flex; justify-content: space-between; margin: 10px 0 18px; }
+  .step { text-align: center; flex: 1; position: relative; }
+  .step:not(:last-child)::after { content: ''; position: absolute; top: 15px; left: 60%; width: 80%; height: 2px; background: #2c2c33; }
+  .dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #1c1c22; border: 2px solid #2c2c33;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 8px; font-size: 13px; color: #777; font-weight: 700; position: relative; z-index: 1;
+  }
+  .step.active .dot { border-color: #f0a500; color: #f0a500; animation: pulse 1.4s infinite; }
+  .step.done .dot { background: #f0a500; border-color: #f0a500; color: #111; }
+  .step-label { font-size: 11px; letter-spacing: 1px; color: #777; text-transform: uppercase; }
+  .step.active .step-label { color: #f0a500; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(240,165,0,0.4);} 50% { box-shadow: 0 0 0 8px rgba(240,165,0,0);} }
+  .result { text-align: center; padding: 10px 0; }
+  .result a { color: #f0a500; font-size: 18px; font-weight: 700; word-break: break-all; }
+  .celebrate { font-size: 30px; margin-bottom: 8px; }
+  .error-box { color: #ff6b6b; text-align: center; font-size: 14px; line-height: 1.6; padding: 8px 0; }
+  .retry { margin-top: 12px; background: none; border: 1.5px solid #ff6b6b; color: #ff6b6b; border-radius: 10px; padding: 10px 24px; cursor: pointer; font-weight: 700; }
+  .header-cta { margin-top: 22px; }
+  .terms-btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 11px 22px;
+    background: #16161a;
+    border: 1.5px solid #f0a500;
+    color: #f0a500;
+    border-radius: 999px;
+    font-size: 13.5px; font-weight: 800; letter-spacing: 1px;
+    text-decoration: none;
+    box-shadow: 0 0 18px rgba(240,165,0,0.18);
+  }
+  .terms-btn:hover { background: #2b2107; }
+  .terms-btn .draft-tag {
+    background: #f0a500; color: #111; border-radius: 8px;
+    padding: 2px 8px; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase;
+  }
+  footer { color: #555; font-size: 12px; margin-top: 26px; text-align: center; line-height: 1.8; }
+  footer a { color: #777; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Referee Innovations</div>
+    <div class="logo">🏭</div>
+    <h1>THE <span>FACTORY</span></h1>
+    <div class="tagline">DESCRIBE IT. OWN IT. LIVE IN MINUTES.</div>
+    <div class="defline">AI-generated websites and web apps for businesses of every size — from instant builds to large projects personally reviewed by our founders.</div>
+    <div class="header-cta">
+      <a class="terms-btn" id="termsBtn" href="terms.html">📄 Terms of Service <span class="draft-tag">Draft</span></a>
+    </div>
+  </header>
+
+  <div class="banner hidden" id="payBanner">🎉 Payment received — your builds are being credited. Thank you!</div>
+  <div class="inbox-banner hidden" id="inboxBanner"></div>
+
+  <div class="card" id="signinCard">
+    <button class="g-btn" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.2 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C41.4 34.9 44 29.9 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="signin-note">Sign in to start building. 3 free builds on us — your apps, your ownership.</div>
+  </div>
+
+  <div class="card hidden" id="founderCard">
+    <div class="section-title">📬 Founder Inbox</div>
+    <div class="section-sub">Visible to you alone. New messages from both doors — enquiries and candidates.</div>
+    <div id="inboxList"></div>
+    <div class="empty-state hidden" id="inboxEmpty">All read. Nothing new.</div>
+  </div>
+
+  <div class="card hidden" id="buildCard">
+    <div class="userbar">
+      <span id="userEmail"></span>
+      <span class="credits" id="creditsBadge">– builds left</span>
+      <button class="signout" onclick="signOut()">Sign out</button>
+    </div>
+    <label>App Name</label>
+    <input id="appName" placeholder="my-business-site" />
+    <div class="hint">Lowercase letters and hyphens work best — we'll tidy it if needed.</div>
+    <label>Describe Your App</label>
+    <textarea id="appDesc" rows="4" placeholder="A booking page for my barbershop in London. Dark style, show services and prices, opening hours, and a booking form..."></textarea>
+    <button class="build-btn" id="buildBtn" onclick="startBuild()">⚙ BUILD</button>
+  </div>
+
+  <div class="card hidden" id="upgradeCard">
+    <div class="section-title">Keep building</div>
+    <div class="section-sub">You own everything The Factory makes for you. Choose how you want to keep creating:</div>
+    <div class="plan-row">
+      <div class="plan best">
+        <div class="p-name">Factory Pro</div>
+        <div class="p-price">£9.99<span style="font-size:13px;color:#888;">/mo</span></div>
+        <div class="p-desc">10 builds every month — about £1 per app. Cancel anytime.</div>
+        <button onclick="checkout('pro')">Go Pro</button>
+      </div>
+      <div class="plan">
+        <div class="p-name">Extra Build</div>
+        <div class="p-price">£3.50</div>
+        <div class="p-desc">One extra build, no subscription. 10 builds this way = £35 — Pro gives you 10 for £9.99.</div>
+        <button onclick="checkout('extra')">Buy 1 Build</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="statusCard">
+    <div class="steps">
+      <div class="step" id="s1"><div class="dot">1</div><div class="step-label">Queued</div></div>
+      <div class="step" id="s2"><div class="dot">2</div><div class="step-label">Building</div></div>
+      <div class="step" id="s3"><div class="dot">3</div><div class="step-label">Deploying</div></div>
+      <div class="step" id="s4"><div class="dot">4</div><div class="step-label">Live</div></div>
+    </div>
+    <div class="result hidden" id="resultBox">
+      <div class="celebrate">🎉</div>
+      <div style="margin-bottom:10px;color:#aaa;">Your app is live:</div>
+      <a id="siteLink" href="#" target="_blank"></a>
+    </div>
+    <div class="error-box hidden" id="errorBox">
+      <div id="errorText"></div>
+      <button class="retry" onclick="resetToForm()">Try again</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">About The Factory</div>
+    <div class="section-sub">The Factory is one innovation from <strong>Referee Innovations</strong> — a solutions consultancy for the creative industries, built on mathematics and science. We create AI-generated websites and web apps for businesses large and small. Larger projects can be directed to our founders for manual analysis and a quotation, to find the solution that optimises your business.</div>
+    <div class="section-title" style="font-size:15px;margin-top:20px;">Reach us here</div>
+    <label>Your Name</label>
+    <input id="rqName" placeholder="Jane Smith" />
+    <label>Your Email</label>
+    <input id="rqEmail" placeholder="jane@business.com" />
+    <label>Your Message</label>
+    <textarea id="rqMsg" rows="3" placeholder="Tell us about your project..."></textarea>
+    <button class="small-btn" id="rqBtn" onclick="submitMessage('enquiry','rqName','rqEmail','rqMsg','rqOk','rqBtn')">Send message</button>
+    <div class="form-ok hidden" id="rqOk">✓ Thank you — we aim to reply within one week.</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Work with us</div>
+    <div class="section-sub">Referee Innovations selects for one ability above all: <strong>problem-solving</strong>. Leave your details, and tell us about real problems you have solved — what was broken, what you did, what changed.</div>
+    <label>Your Name</label>
+    <input id="wuName" placeholder="Alex Morgan" />
+    <label>Your Email</label>
+    <input id="wuEmail" placeholder="alex@email.com" />
+    <label>Problems You Have Solved</label>
+    <textarea id="wuMsg" rows="4" placeholder="Real examples — the problem, your approach, the result..."></textarea>
+    <button class="small-btn" id="wuBtn" onclick="submitMessage('candidate','wuName','wuEmail','wuMsg','wuOk','wuBtn')">Apply</button>
+    <div class="form-ok hidden" id="wuOk">✓ Thank you — we aim to reply within one week.</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Updates &amp; Stories</div>
+    <div class="section-sub">Films from Referee Innovations: how we solve problems in the creative industries — with a special focus on The Factory itself.</div>
+    <div class="empty-state">🎬 Our first films are in production.<br>Check back soon — or build something while you wait.</div>
+  </div>
+
+  <footer>
+    Built with The Factory 🏭 · You own everything we build for you.<br>
+    The Factory is a <strong>Referee Innovations</strong> company · <a href="https://factory-love-between-nations.netlify.app" target="_blank">Our Manifesto</a>
+  </footer>
+</div>
+
+<script>
+  const SB_URL = 'https://canvbkibjgcnqowjtarf.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhbnZia2liamdjbnFvd2p0YXJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3NzE0NDYsImV4cCI6MjA5OTM0NzQ0Nn0.TLskVoTaYI90avy09IuM_kkKvAYUMETTntZkn2M807I';
+  const WORKER = SB_URL + '/functions/v1/swift-worker';
+  const CHECKOUT = SB_URL + '/functions/v1/Stripe-Checkout';
+  const sb = supabase.createClient(SB_URL, SB_ANON);
+
+  let session = null;
+  let pollTimer = null;
+
+  sb.auth.onAuthStateChange((_e, s) => { session = s; render(); });
+  sb.auth.getSession().then(({ data }) => { session = data.session; render(); });
+
+  if (new URLSearchParams(location.search).get('payment') === 'success') {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('payBanner').classList.remove('hidden');
+      setTimeout(loadCredits, 4000);
+    });
+  }
+
+  function render() {
+    const si = !!session;
+    document.getElementById('signinCard').classList.toggle('hidden', si);
+    document.getElementById('buildCard').classList.toggle('hidden', !si);
+    document.getElementById('upgradeCard').classList.toggle('hidden', !si);
+    if (si) {
+      document.getElementById('userEmail').textContent = session.user.email;
+      loadCredits();
+    } else {
+      document.getElementById('founderCard').classList.add('hidden');
+      document.getElementById('inboxBanner').classList.add('hidden');
+    }
+  }
+
+  async function loadCredits() {
+    if (!session) return;
+    const { data } = await sb.from('users').select('builds_remaining, is_founder').eq('auth_id', session.user.id).single();
+    if (data) {
+      document.getElementById('creditsBadge').textContent = (data.builds_remaining ?? 0) + ' builds left';
+      if (data.is_founder) loadInbox();
+    }
+  }
+
+  async function loadInbox() {
+    const { data } = await sb.from('enquiries').select('*').eq('seen', false).order('created_at', { ascending: false });
+    const card = document.getElementById('founderCard');
+    const list = document.getElementById('inboxList');
+    const empty = document.getElementById('inboxEmpty');
+    const bannerEl = document.getElementById('inboxBanner');
+    card.classList.remove('hidden');
+    list.innerHTML = '';
+    if (data && data.length > 0) {
+      bannerEl.textContent = '📬 ' + data.length + ' new message' + (data.length > 1 ? 's' : '') + ' in your Founder Inbox';
+      bannerEl.classList.remove('hidden');
+      empty.classList.add('hidden');
+      for (const e of data) {
+        const div = document.createElement('div');
+        div.className = 'enquiry';
+        const tagClass = e.kind === 'candidate' ? 'kind-candidate' : 'kind-enquiry';
+        const tagText = e.kind === 'candidate' ? 'Candidate' : 'Enquiry';
+        div.innerHTML =
+          '<div class="e-head"><span class="e-who"></span><span class="kind-tag ' + tagClass + '">' + tagText + '</span></div>' +
+          '<div class="e-meta"></div>' +
+          '<div class="e-msg"></div>' +
+          '<button class="mark-read">Mark as read</button>';
+        div.querySelector('.e-who').textContent = (e.name || 'Anonymous') + ' · ' + (e.email || 'no email');
+        div.querySelector('.e-meta').textContent = new Date(e.created_at).toLocaleString();
+        div.querySelector('.e-msg').textContent = e.message;
+        div.querySelector('.mark-read').onclick = () => markRead(e.id);
+        list.appendChild(div);
+      }
+    } else {
+      bannerEl.classList.add('hidden');
+      empty.classList.remove('hidden');
+    }
+  }
+
+  async function markRead(id) {
+    await sb.from('enquiries').update({ seen: true }).eq('id', id);
+    loadInbox();
+  }
+
+  async function submitMessage(kind, nameId, emailId, msgId, okId, btnId) {
+    const name = document.getElementById(nameId).value.trim();
+    const email = document.getElementById(emailId).value.trim();
+    const message = document.getElementById(msgId).value.trim();
+    if (!message || !email) { alert('Please add your email and a message.'); return; }
+    document.getElementById(btnId).disabled = true;
+    const { error } = await sb.from('enquiries').insert({ kind, name, email, message });
+    if (error) {
+      alert('Could not send — please try again.');
+      document.getElementById(btnId).disabled = false;
+      return;
+    }
+    document.getElementById(okId).classList.remove('hidden');
+    document.getElementById(nameId).value = '';
+    document.getElementById(emailId).value = '';
+    document.getElementById(msgId).value = '';
+    document.getElementById(btnId).disabled = false;
+  }
+
+  async function signIn() {
+    await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+  }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    document.getElementById('statusCard').classList.add('hidden');
+  }
+
+  async function checkout(plan) {
+    try {
+      const res = await fetch(CHECKOUT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ plan: plan, quantity: 1 })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout');
+      window.location.href = data.url;
+    } catch (e) { alert(e.message); }
+  }
+
+  function setStep(n, failed) {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById('s' + i);
+      el.classList.remove('active', 'done');
+      if (i < n) el.classList.add('done');
+      if (i === n && !failed) el.classList.add(n === 4 ? 'done' : 'active');
+    }
+  }
+
+  async function startBuild() {
+    const name = document.getElementById('appName').value.trim();
+    const desc = document.getElementById('appDesc').value.trim();
+    if (!name || !desc) { alert('Give your app a name and a description.'); return; }
+
+    document.getElementById('buildBtn').disabled = true;
+    document.getElementById('statusCard').classList.remove('hidden');
+    document.getElementById('resultBox').classList.add('hidden');
+    document.getElementById('errorBox').classList.add('hidden');
+    setStep(1);
+
+    try {
+      const res = await fetch(WORKER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ repoName: name, description: desc })
+      });
+      const data = await res.json();
+      if (res.status === 402) {
+        document.getElementById('statusCard').classList.add('hidden');
+        document.getElementById('buildBtn').disabled = false;
+        document.getElementById('upgradeCard').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+      if (!res.ok || !data.buildId) throw new Error(data.error || 'Could not start build');
+      poll(data.buildId);
+    } catch (e) { showError(e.message); }
+  }
+
+  function poll(buildId) {
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await fetch(WORKER + '?buildId=' + buildId, {
+          headers: { 'Authorization': 'Bearer ' + session.access_token }
+        });
+        const b = await res.json();
+        if (b.status === 'pending') setStep(1);
+        else if (b.status === 'building') setStep(2);
+        else if (b.status === 'deploying') setStep(3);
+        else if (b.status === 'done') {
+          setStep(4);
+          clearInterval(pollTimer);
+          const link = document.getElementById('siteLink');
+          link.href = b.site_url; link.textContent = b.site_url;
+          document.getElementById('resultBox').classList.remove('hidden');
+          document.getElementById('buildBtn').disabled = false;
+          loadCredits();
+        } else if (b.status === 'failed') {
+          clearInterval(pollTimer);
+          showError(b.error || 'Build failed');
+          loadCredits();
+        }
+      } catch (_) { /* keep polling */ }
+    }, 5000);
+  }
+
+  function showError(msg) {
+    setStep(0, true);
+    document.getElementById('errorText').textContent = msg;
+    document.getElementById('errorBox').classList.remove('hidden');
+    document.getElementById('buildBtn').disabled = false;
+  }
+
+  function resetToForm() {
+    document.getElementById('statusCard').classList.add('hidden');
+  }
+</script>
+</body>
+</html>
