@@ -215,6 +215,21 @@
     </div>
   </div>
 
+  <div class="card hidden" id="govCard">
+    <div class="section-title">⚖️ Open Governance page</div>
+    <div class="section-sub">Visible to you alone. The page is always reachable; this decides what visitors see on it.</div>
+    <div class="userbar">
+      <span>Current state</span>
+      <span class="credits" id="govState">–</span>
+      <a class="signout" href="/governance" target="_blank" style="text-decoration:none;">View page</a>
+    </div>
+    <label>Progress message shown while held</label>
+    <textarea id="govStatus" rows="3" placeholder="How far along the work is..."></textarea>
+    <button class="small-btn" id="govSaveBtn" onclick="saveGovernance()">Save message</button>
+    <button class="small-btn" id="govToggleBtn" onclick="toggleGovernance()" style="background:#26262c;color:#eee;margin-left:8px;">Release page</button>
+    <div class="form-ok hidden" id="govOk">✓ Saved.</div>
+  </div>
+
   <div class="card hidden" id="statusCard">
     <div class="steps">
       <div class="step" id="s1"><div class="dot">1</div><div class="step-label">Queued</div></div>
@@ -311,7 +326,7 @@
     const { data } = await sb.from('users').select('builds_remaining, is_founder').eq('auth_id', session.user.id).single();
     if (data) {
       document.getElementById('creditsBadge').textContent = (data.builds_remaining ?? 0) + ' builds left';
-      if (data.is_founder) loadInbox();
+      if (data.is_founder) { loadInbox(); loadGovernance(); }
     }
   }
 
@@ -470,6 +485,48 @@
   function resetToForm() {
     document.getElementById('statusCard').classList.add('hidden');
   }
+
+  let govReleased = false;
+
+  async function loadGovernance() {
+    const { data } = await sb.from('site_settings').select('value').eq('key', 'governance').single();
+    const val = (data && data.value) || {};
+    govReleased = val.released === true;
+    document.getElementById('govStatus').value = val.status || '';
+    document.getElementById('govState').textContent = govReleased ? 'RELEASED' : 'HELD';
+    document.getElementById('govToggleBtn').textContent = govReleased ? 'Hold page' : 'Release page';
+    document.getElementById('govCard').classList.remove('hidden');
+  }
+
+  async function writeGovernance(released, status) {
+    const { error } = await sb.from('site_settings')
+      .update({ value: { released: released, status: status }, updated_at: new Date().toISOString() })
+      .eq('key', 'governance');
+    if (error) { alert('Could not save — ' + error.message); return false; }
+    const ok = document.getElementById('govOk');
+    ok.classList.remove('hidden');
+    setTimeout(() => ok.classList.add('hidden'), 2500);
+    return true;
+  }
+
+  async function saveGovernance() {
+    const btn = document.getElementById('govSaveBtn');
+    btn.disabled = true;
+    await writeGovernance(govReleased, document.getElementById('govStatus').value.trim());
+    btn.disabled = false;
+    loadGovernance();
+  }
+
+  async function toggleGovernance() {
+    const next = !govReleased;
+    if (!confirm(next ? 'Release the Open Governance page to the public?' : 'Hold the page again (visitors see your message)?')) return;
+    const btn = document.getElementById('govToggleBtn');
+    btn.disabled = true;
+    await writeGovernance(next, document.getElementById('govStatus').value.trim());
+    btn.disabled = false;
+    loadGovernance();
+  }
+
 </script>
 </body>
 </html>
