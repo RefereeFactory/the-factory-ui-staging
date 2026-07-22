@@ -30,12 +30,16 @@
     border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;
     font-size: 14.5px; text-align: center; font-weight: 800; letter-spacing: 1px; line-height: 1.7;
   }
-  .status-msg { font-size: 15px; color: #ccc; line-height: 1.8; text-align: center; }
-  .stamp { font-size: 12px; letter-spacing: 1.5px; color: #777; text-transform: uppercase; margin-top: 18px; text-align: center; }
-  h2 { font-size: 16px; font-weight: 800; color: #f0a500; margin: 26px 0 8px; }
-  h2:first-of-type { margin-top: 0; }
+  .section-title { font-size: 17px; font-weight: 800; margin-bottom: 10px; color: #f0a500; }
+  .status-msg { font-size: 15px; color: #ccc; line-height: 1.85; white-space: pre-wrap; }
+  .stamp { font-size: 12px; letter-spacing: 1.5px; color: #777; text-transform: uppercase; margin-top: 18px; }
+  .principle {
+    background: #0d0d0f; border: 1px solid #2c2c33; border-left: 3px solid #f0a500;
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 12px;
+  }
+  .principle .p-name { font-weight: 800; font-size: 14px; color: #f0a500; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .principle .p-body { font-size: 14.5px; color: #bbb; line-height: 1.75; }
   p { font-size: 14.5px; color: #bbb; line-height: 1.75; }
-  p + p { margin-top: 10px; }
   a { color: #f0a500; }
   .hidden { display: none !important; }
   .back-btn {
@@ -60,24 +64,37 @@
 
   <div id="loading" class="card"><p class="center">Loading…</p></div>
 
-  <div id="heldView" class="hidden">
-    <div class="held-banner">🔒 IN PREPARATION</div>
-    <div class="card">
-      <p class="status-msg" id="statusMsg"></p>
-      <div class="stamp" id="stamp"></div>
-      <div class="center" style="margin-top:26px;">
-        <a class="back-btn" href="/">← Back to The Factory</a>
-      </div>
-    </div>
+  <div id="heldBanner" class="held-banner hidden">🔒 IN PREPARATION</div>
+
+  <div id="mainCard" class="card hidden">
+    <div class="section-title" id="msgTitle">A note from the founder</div>
+    <p class="status-msg" id="statusMsg"></p>
+    <div class="stamp" id="stamp"></div>
   </div>
 
-  <div id="releasedView" class="hidden">
-    <div class="card">
-      <p class="status-msg" id="releasedNote"></p>
-      <div class="stamp" id="stamp2"></div>
-      <div class="center" style="margin-top:26px;">
-        <a class="back-btn" href="/">← Back to The Factory</a>
-      </div>
+  <div id="noteCard" class="card hidden">
+    <div class="section-title">For would-be collaborators</div>
+    <p class="status-msg" id="collabMsg"></p>
+  </div>
+
+  <div class="card">
+    <div class="section-title">The core principles</div>
+    <p style="margin-bottom:16px;">Everything on this page, and anything agreed through it, must align with these two. Nothing is committed to without consultation, and nothing that fails these is committed to at all.</p>
+
+    <div class="principle">
+      <div class="p-name">No harm</div>
+      <div class="p-body">Nothing we build, publish, or agree to may cause harm to people.</div>
+    </div>
+
+    <div class="principle">
+      <div class="p-name">The right to seek the good life</div>
+      <div class="p-body">Every person has the right to seek a good life for themselves and their family, and our work exists to widen that road rather than narrow it.</div>
+    </div>
+
+    <p style="margin-top:16px;">These principles follow the <em>Love Between Nations</em> Manifesto — read it at <a href="https://factory-love-between-nations.netlify.app" target="_blank">factory-love-between-nations.netlify.app</a>.</p>
+
+    <div class="center" style="margin-top:26px;">
+      <a class="back-btn" href="/">← Back to The Factory</a>
     </div>
   </div>
 
@@ -108,15 +125,19 @@
     const val = (row && row.value) || {};
     const released = val.released === true;
 
-    if (released) {
-      document.getElementById('releasedNote').textContent = val.status || 'This page is now open.';
-      document.getElementById('stamp2').textContent = stampText(row && row.updated_at);
-      document.getElementById('releasedView').classList.remove('hidden');
-    } else {
-      document.getElementById('statusMsg').textContent =
-        val.status || "This page is being written in the open, at the founder's pace — the business comes first.";
-      document.getElementById('stamp').textContent = stampText(row && row.updated_at);
-      document.getElementById('heldView').classList.remove('hidden');
+    document.getElementById('statusMsg').textContent =
+      val.status || "This page is being written in the open, at the founder's pace — the business comes first.";
+    document.getElementById('stamp').textContent = stampText(row && row.updated_at);
+    document.getElementById('mainCard').classList.remove('hidden');
+
+    if (!released) {
+      document.getElementById('heldBanner').classList.remove('hidden');
+      document.getElementById('msgTitle').textContent = 'Where this work has reached';
+    }
+
+    if (val.note && val.note.trim()) {
+      document.getElementById('collabMsg').textContent = val.note;
+      document.getElementById('noteCard').classList.remove('hidden');
     }
   })();
 </script>
