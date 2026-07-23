@@ -195,6 +195,36 @@
     background: #f0a500; color: #111; border-radius: 8px;
     padding: 2px 8px; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase;
   }
+  .m-item {
+    background: #0d0d0f; border: 1px solid #2c2c33; border-radius: 14px;
+    padding: 18px; margin-bottom: 12px; transition: border-color .15s;
+  }
+  .m-item:hover { border-color: #f0a500; }
+  .m-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .m-title { font-size: 15.5px; font-weight: 800; color: #eee; }
+  .m-price {
+    background: linear-gradient(135deg, #f0a500, #d48800); color: #111;
+    border-radius: 999px; padding: 5px 14px; font-weight: 800; font-size: 13.5px; white-space: nowrap;
+  }
+  .m-summary { font-size: 13.5px; color: #999; line-height: 1.7; margin: 8px 0 12px; }
+  .m-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .m-try {
+    background: none; border: 1.5px solid #f0a500; color: #f0a500;
+    border-radius: 10px; padding: 10px 18px; cursor: pointer;
+    font-size: 13px; font-weight: 800; font-family: inherit;
+  }
+  .m-try:hover { background: #2b2107; }
+  .m-open { font-size: 12.5px; color: #777; text-decoration: underline; }
+  .m-code {
+    background: #10321a; border: 1px solid #28a745; color: #7ee2a8;
+    border-radius: 10px; padding: 12px 14px; margin-top: 10px;
+    font-size: 13px; line-height: 1.7; word-break: break-all;
+  }
+  .a-sell {
+    background: none; border: 1px solid #28a745; color: #7ee2a8;
+    border-radius: 8px; padding: 7px 14px; cursor: pointer;
+    font-size: 12.5px; font-weight: 700; font-family: inherit; white-space: nowrap;
+  }
   footer { color: #555; font-size: 12px; margin-top: 26px; text-align: center; line-height: 1.8; }
   footer a { color: #777; }
 </style>
@@ -309,6 +339,12 @@
       <div id="errorText"></div>
       <button class="retry" onclick="resetToForm()">Try again</button>
     </div>
+  </div>
+
+  <div class="card hidden" id="marketCard">
+    <div class="section-title">🛒 Marketplace</div>
+    <div class="section-sub">Apps built by our makers, ready to use today. Every app comes with a 4-day free trial — pay only if you love it.</div>
+    <div id="marketList"></div>
   </div>
 
   <div class="card">
@@ -557,10 +593,99 @@
     document.getElementById('statusCard').classList.add('hidden');
   }
 
+  // ---------------- marketplace ----------------
+  let sellerRowId = null;
+  const MARKET_FN = SB_URL + '/functions/v1/app-market';
+
+  async function loadMarket() {
+    const { data, error } = await sb.from('market_listings')
+      .select('repo_name, title, summary, price_pence')
+      .eq('approved', true)
+      .order('created_at', { ascending: false });
+    if (error || !data || !data.length) return;   // empty market stays hidden
+
+    const card = document.getElementById('marketCard');
+    const list = document.getElementById('marketList');
+    list.innerHTML = '';
+    for (const item of data) {
+      const div = document.createElement('div');
+      div.className = 'm-item';
+      div.innerHTML =
+        '<div class="m-top"><span class="m-title"></span><span class="m-price"></span></div>' +
+        '<div class="m-summary"></div>' +
+        '<div class="m-actions">' +
+        '<button class="m-try">✨ Try free for 4 days</button>' +
+        '<a class="m-open" target="_blank">preview app</a>' +
+        '</div>';
+      div.querySelector('.m-title').textContent = item.title;
+      div.querySelector('.m-price').textContent = '£' + (item.price_pence / 100).toFixed(2);
+      div.querySelector('.m-summary').textContent = item.summary || '';
+      const open = div.querySelector('.m-open');
+      open.href = 'https://factory-' + item.repo_name + '.netlify.app';
+      div.querySelector('.m-try').onclick = function () { startTrial(item.repo_name, div); };
+      list.appendChild(div);
+    }
+    card.classList.remove('hidden');
+  }
+
+  async function startTrial(repo, itemDiv) {
+    if (!session) { alert('Sign in with Google first — your trial code is tied to your account.'); return; }
+    try {
+      const res = await fetch(MARKET_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ op: 'trial', repo: repo })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Could not start trial');
+      let box = itemDiv.querySelector('.m-code');
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'm-code';
+        itemDiv.appendChild(box);
+      }
+      const until = d.trial_ends_at ? new Date(d.trial_ends_at).toLocaleDateString() : '';
+      box.textContent = d.status === 'paid'
+        ? '✓ You own this app. Your access code: ' + d.code
+        : '✓ Trial active until ' + until + '. Your private access code: ' + d.code +
+          ' — open the app and enter it to unlock everything. Keep it safe.';
+    } catch (e) { alert(e.message); }
+  }
+
+  async function sellApp(repo) {
+    if (!sellerRowId) { alert('Please sign in again.'); return; }
+    const title = (prompt('Marketplace title for "' + repo + '":', repo) || '').trim();
+    if (!title) return;
+    const summary = (prompt('One-sentence description buyers will see:') || '').trim();
+    if (!summary) return;
+    const priceStr = (prompt('Price in pounds (minimum £5.00):', '13.00') || '').trim();
+    const pence = Math.round(parseFloat(priceStr) * 100);
+    if (!isFinite(pence) || pence < 500) { alert('Price must be at least £5.00.'); return; }
+
+    const { error } = await sb.from('market_listings').insert({
+      repo_name: repo, seller_id: sellerRowId, title: title, summary: summary, price_pence: pence
+    });
+    if (error) {
+      if ((error.message || '').indexOf('app_keys') !== -1 || (error.code || '') === '23503') {
+        alert('This app needs one update before it can be sold (to enable its storage connection). Press ✏️ Change, make any small change, then try again.');
+      } else if ((error.code || '') === '23505') {
+        alert('This app is already listed. We will review it shortly.');
+      } else {
+        alert('Could not list — ' + error.message);
+      }
+      return;
+    }
+    alert('Submitted! Your listing goes live once the founder approves it. The Factory takes 26.5% of each sale; you keep 73.5%.');
+  }
+
+  loadMarket();
+
+
   // ---------------- your apps ----------------
   let updateRepo = null;   // repo name when changing an existing app
 
   async function loadApps(userRowId) {
+    sellerRowId = userRowId;
     if (!userRowId) return;
     const card = document.getElementById('appsCard');
     const list = document.getElementById('appsList');
@@ -592,13 +717,16 @@
       row.className = 'app-row';
       row.innerHTML =
         '<div class="a-top"><span class="a-name"></span>' +
-        '<button class="a-change">✏️ Change this app</button></div>' +
+        '<span style="display:flex;gap:8px;">' +
+        '<button class="a-change">✏️ Change this app</button>' +
+        '<button class="a-sell">💰 Sell</button></span></div>' +
         '<a class="a-link" target="_blank"></a>';
       row.querySelector('.a-name').textContent = app.repo_name;
       const link = row.querySelector('.a-link');
       link.textContent = app.site_url || '(no address)';
       if (app.site_url) link.href = app.site_url;
       row.querySelector('.a-change').onclick = function () { startUpdate(app.repo_name); };
+      row.querySelector('.a-sell').onclick = function () { sellApp(app.repo_name); };
       list.appendChild(row);
     }
   }
