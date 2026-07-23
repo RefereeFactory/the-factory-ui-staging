@@ -214,7 +214,19 @@
     font-size: 13px; font-weight: 800; font-family: inherit;
   }
   .m-try:hover { background: #2b2107; }
-  .m-open { font-size: 12.5px; color: #777; text-decoration: underline; }
+  .m-open {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: 1.5px solid #2c2c33; color: #ccc;
+    border-radius: 10px; padding: 10px 18px;
+    font-size: 13px; font-weight: 800; text-decoration: none;
+  }
+  .m-open:hover { border-color: #f0a500; color: #f0a500; }
+  .m-go {
+    display: block; text-align: center; margin-top: 10px; padding: 13px 18px;
+    background: linear-gradient(135deg, #f0a500, #d48800); color: #111;
+    border-radius: 10px; font-size: 14px; font-weight: 800; letter-spacing: 1px;
+    text-decoration: none;
+  }
   .m-code {
     background: #10321a; border: 1px solid #28a745; color: #7ee2a8;
     border-radius: 10px; padding: 12px 14px; margin-top: 10px;
@@ -240,6 +252,7 @@
     <div class="header-cta">
       <a class="terms-btn" id="termsBtn" href="terms.html">📄 Terms of Service <span class="draft-tag">Draft</span></a>
       <a class="terms-btn" id="govBtn" href="governance.html">⚖️ Open Governance</a>
+      <a class="terms-btn" id="marketBtn" href="#marketCard">🛒 Marketplace</a>
     </div>
   </header>
 
@@ -261,6 +274,13 @@
     <button class="small-btn" id="govSaveBtn" onclick="saveGovernance()">Save messages</button>
     <button class="small-btn" id="govToggleBtn" onclick="toggleGovernance()" style="background:#26262c;color:#eee;margin-left:8px;">Release page</button>
     <div class="form-ok hidden" id="govOk">✓ Saved.</div>
+  </div>
+
+  <div class="card" id="marketCard">
+    <div class="section-title">🛒 Marketplace</div>
+    <div class="section-sub">Apps built by our makers, ready to use today. Every app comes with a 4-day free trial — pay only if you love it.</div>
+    <div id="marketList"></div>
+    <div class="empty-state" id="marketEmpty">🛒 The shelves are opening. Makers are preparing their first apps — yours could be the very first: build it, then press 💰 Sell.</div>
   </div>
 
   <div class="card" id="signinCard">
@@ -339,12 +359,6 @@
       <div id="errorText"></div>
       <button class="retry" onclick="resetToForm()">Try again</button>
     </div>
-  </div>
-
-  <div class="card hidden" id="marketCard">
-    <div class="section-title">🛒 Marketplace</div>
-    <div class="section-sub">Apps built by our makers, ready to use today. Every app comes with a 4-day free trial — pay only if you love it.</div>
-    <div id="marketList"></div>
   </div>
 
   <div class="card">
@@ -602,11 +616,11 @@
       .select('repo_name, title, summary, price_pence')
       .eq('approved', true)
       .order('created_at', { ascending: false });
-    if (error || !data || !data.length) return;   // empty market stays hidden
-
-    const card = document.getElementById('marketCard');
     const list = document.getElementById('marketList');
+    const empty = document.getElementById('marketEmpty');
     list.innerHTML = '';
+    if (error || !data || !data.length) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
     for (const item of data) {
       const div = document.createElement('div');
       div.className = 'm-item';
@@ -615,7 +629,7 @@
         '<div class="m-summary"></div>' +
         '<div class="m-actions">' +
         '<button class="m-try">✨ Try free for 4 days</button>' +
-        '<a class="m-open" target="_blank">preview app</a>' +
+        '<a class="m-open" target="_blank">▶ Open app</a>' +
         '</div>';
       div.querySelector('.m-title').textContent = item.title;
       div.querySelector('.m-price').textContent = '£' + (item.price_pence / 100).toFixed(2);
@@ -625,7 +639,6 @@
       div.querySelector('.m-try').onclick = function () { startTrial(item.repo_name, div); };
       list.appendChild(div);
     }
-    card.classList.remove('hidden');
   }
 
   async function startTrial(repo, itemDiv) {
@@ -646,9 +659,18 @@
       }
       const until = d.trial_ends_at ? new Date(d.trial_ends_at).toLocaleDateString() : '';
       box.textContent = d.status === 'paid'
-        ? '✓ You own this app. Your access code: ' + d.code
-        : '✓ Trial active until ' + until + '. Your private access code: ' + d.code +
-          ' — open the app and enter it to unlock everything. Keep it safe.';
+        ? '✓ You own this app.'
+        : '✓ Trial active until ' + until + '.';
+      const go = document.createElement('a');
+      go.className = 'm-go';
+      go.target = '_blank';
+      go.href = 'https://factory-' + repo + '.netlify.app/#factory_code=' + d.code;
+      go.textContent = '🚀 Open your app — already unlocked';
+      box.appendChild(go);
+      const spare = document.createElement('div');
+      spare.style.cssText = 'margin-top:8px;font-size:11.5px;color:#5da97e;';
+      spare.textContent = 'Opening on another device? Your access code: ' + d.code;
+      box.appendChild(spare);
     } catch (e) { alert(e.message); }
   }
 
