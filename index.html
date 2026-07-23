@@ -386,7 +386,7 @@
 
   async function loadCredits() {
     if (!session) return;
-    const { data } = await sb.from('users').select('builds_remaining, is_founder').eq('auth_id', session.user.id).single();
+    const { data } = await sb.from('users').select('id, builds_remaining, is_founder').eq('auth_id', session.user.id).single();
     if (data) {
       document.getElementById('creditsBadge').textContent = (data.builds_remaining ?? 0) + ' builds left';
       loadApps(data.id);
